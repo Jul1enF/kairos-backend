@@ -84,12 +84,12 @@ router.put('/newSearch', async (req, res) => {
         longitude: companyCoordinates[1],
       }
     }
-    else if (e.adresseEtablissement.numeroVoieEtablissement !== null && e.adresseEtablissement.numeroVoieEtablissement !== "[ND]") {
-      coordinates = {
-        adresse: `${e.adresseEtablissement.numeroVoieEtablissement} ${e.adresseEtablissement.typeVoieEtablissement} ${e.adresseEtablissement.libelleVoieEtablissement} ${e.adresseEtablissement.codePostalEtablissement} ${e.adresseEtablissement.libelleCommuneEtablissement}`
-      }
-    }
-    else { coordinates = { localisation: "Non renseignée" } }
+    // else if (e.adresseEtablissement.numeroVoieEtablissement !== null && e.adresseEtablissement.numeroVoieEtablissement !== "[ND]") {
+    //   coordinates = {
+    //     adresse: `${e.adresseEtablissement.numeroVoieEtablissement} ${e.adresseEtablissement.typeVoieEtablissement} ${e.adresseEtablissement.libelleVoieEtablissement} ${e.adresseEtablissement.codePostalEtablissement} ${e.adresseEtablissement.libelleCommuneEtablissement}`
+    //   }
+    // }
+    // else { coordinates = { localisation: "Non renseignée" } }
 
     // Création des champs status et employees
 
