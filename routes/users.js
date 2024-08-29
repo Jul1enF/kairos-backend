@@ -27,7 +27,7 @@ router.post('/signup', (req, res) => {
   // Check if the user has not already been registered
   User.findOne({ email: req.body.email }).then(data => {
     if (data === null) {
-      const hash = bcrypt.hashSync(req.body.password, 1);
+      const hash = bcrypt.hashSync(req.body.password, 10);
       const newUser = new User({
         firstname: req.body.firstname,
         name: req.body.name,
@@ -58,9 +58,10 @@ router.post('/signup', (req, res) => {
         userId: data._id
     }, emailSecret, { expiresIn: '1h' });
 
+    console.log(emailToken)
     // URL ROUTE GET POUR CONFIRMER MAIL
     const url = `${urlBack}/users/confirmation/${emailToken}`
-
+    console.log(url)
     // MAIL ENVOYE
     const mailOptions = {
       from: ourEmail,
@@ -85,31 +86,28 @@ router.post('/signup', (req, res) => {
         </div>
       </body>`,
     };
-  
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error sending email: ", error);
+        res.status(500).json({ result: false, error: 'Failed to send confirmation email' });
       } else {
         console.log("Email sent: ", info.response);
-      }
-    });
-
-    const user = {
-      firstname: data.firstname,
-      name: data.name,
-      email: data.email,
-      skills: data.skills,
-      last_connection: data.last_connection,
-      searches: data.searches,
-      verified: false,
-    }
-
-        res.json({ result: true, user});
-      });
-    } 
+        const user = {
+          firstname: data.firstname,
+          name: data.name,
+          email: data.email,
+          skills: data.skills,
+          last_connection: data.last_connection,
+          searches: data.searches,
+          verified: false,
+        }
     
-    else {
+        res.json({ result: true, user});
+      }
+    })
+  })
+    } else {
       // User already exists in database
       res.json({ result: false, error: 'User already exists' });
     }
@@ -153,7 +151,6 @@ router.get('/confirmation/:token', (req, res) => {
   
 })
 
-
 // ROUTE SIGNIN
 router.post('/signin', (req, res) => {
   if (!checkBody(req.body, ['email', 'password'])) {
@@ -194,16 +191,20 @@ router.get('/auth/google/callback',
         );
 
         // Rediriger vers une page frontend (comme /google) avec le token dans le cookie
-        res.cookie('jwt', token, { httpOnly: true, secure: true, maxAge: 3600000 });
-        res.redirect('http://localhost:3001/google'); // Rediriger vers le frontend après auth
+        res.cookie('jwt', token, { sameSite: 'none', httpOnly: false, secure: true, maxAge: 3600000, });
+        res.redirect(`${urlFront}/google`); // Rediriger vers le frontend après auth
       } else {
         res.status(401).json({ error: 'Authentication failed' });
       }
     });
 
-// ROUTE POUR OBTENIR LES INFOS USER
+// ROUTE POUR OBTENIR LES INFOS USER POUR GOOGLE
 router.get('/api/me', (req, res) => {
   const token = req.cookies.jwt;
+  console.log('token:', token)
+  console.log('req.headers:', req.headers)
+  console.log('cookies:', req.cookies)
+  
   if (!token) {
     return res.status(401).json({ error: 'No token found' });
   }
@@ -246,19 +247,6 @@ router.post('/info-user', (req, res) => {
     res.json({ result: false, message: "Token ou email manquant" })
   }
 });
-
-//ROUTE INFO USER
-// router.post('/info-user', (req,res) => {
-//   User.findOne({email: req.body.email})
-//   .then(data => {
-//     if (data !== null) {
-//           res.json({ result: true, user: data })        
-//     } else {
-//       res.json({ result: false, message: "Utilisateur non trouvé" });
-//     }
-//   })
-// })
-
 
 
 // ROUTE DELETE USER ACCOUNT 
@@ -343,58 +331,57 @@ router.put('/update-email', (req,res) => {
           if (data.modifiedCount === 0) {
               res.json({result: false, message: "Update Fail"})
           }else{
-            res.json({result : true})
+              // SETUP COMPTE ENVOI DES MAILS CONFIRMATION
+              const transporter = nodemailer.createTransport({
+              service: "Gmail",
+              host: "smtp.gmail.com",
+              port: 465,
+              secure: true,
+              auth: {
+                user: ourEmail,
+                pass: ourPassword,
+              },
+              });
+              // SETUP TOKEN A ENVOYER AU USER 
+              const emailToken = jwt.sign({userId: req.body.token}, emailSecret, { expiresIn: '1h' });
+              
+              // URL ROUTE GET POUR CONFIRMER MAIL
+              const url = `${urlBack}/users/new-email-confirmation/${emailToken}`;
+
+              // MAIL ENVOYE
+              const mailOptions = {
+                from: ourEmail,
+                to: req.body.email, //nouveau mail
+                subject: "KAIROS - Confirmation Modification d'email",
+                html: `
+                  <body style="margin: 0; padding: 0;color:#163050;">
+                    <div style="height: 50%; display: flex; flex-direction: column; margin: 0;padding: 5%;height: 100%;background: linear-gradient(to bottom, #F8E9A9, #ffffff)">
+                      <h1 style="font-family:Calibri; align-self: center; border-bottom: 1px solid #163050">
+                      Kairos
+                      </h1>
+
+                      <h2>Bonjour,</h2>
+
+                      <h4 style="font-family:Calibri;">
+                      Pour confirmer votre nouvelle adresse mail et accéder à tous nos services, merci de cliquer sur ce lien : <a href =${url}>confirmer votre adresse mail</a>
+                      </h4>
+
+                      <h5 style="font-family:Calibri;">
+                      À bientôt sur Kairos !
+                      </h5>
+                    </div>
+                  </body>`,
+              };
+
+              transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                  console.error("Error sending email: ", error);
+                } else {
+                  console.log("Email sent: ", info.response);
+                  res.json({result : true})
+                }
+            })
           }
-          
-          // SETUP COMPTE ENVOI DES MAILS CONFIRMATION
-          const transporter = nodemailer.createTransport({
-          service: "Gmail",
-          host: "smtp.gmail.com",
-          port: 465,
-          secure: true,
-          auth: {
-            user: ourEmail,
-            pass: ourPassword,
-          },
-        });
-          // SETUP TOKEN A ENVOYER AU USER 
-          const emailToken = jwt.sign({userId: req.body.token}, emailSecret, { expiresIn: '1h' });
-          
-          // URL ROUTE GET POUR CONFIRMER MAIL
-          const url = `${urlBack}/users/new-email-confirmation/${emailToken}`;
-
-          // MAIL ENVOYE
-          const mailOptions = {
-            from: ourEmail,
-            to: req.body.email, //nouveau mail
-            subject: "KAIROS - Confirmation Modification d'email",
-            html: `
-              <body style="margin: 0; padding: 0;color:#163050;">
-                <div style="height: 50%; display: flex; flex-direction: column; margin: 0;padding: 5%;height: 100%;background: linear-gradient(to bottom, #F8E9A9, #ffffff)">
-                  <h1 style="font-family:Calibri; align-self: center; border-bottom: 1px solid #163050">
-                  Kairos
-                  </h1>
-
-                  <h2>Bonjour,</h2>
-
-                  <h4 style="font-family:Calibri;">
-                  Pour confirmer votre nouvelle adresse mail et accéder à tous nos services, merci de cliquer sur ce lien : <a href =${url}>confirmer votre adresse mail</a>
-                  </h4>
-
-                  <h5 style="font-family:Calibri;">
-                  À bientôt sur Kairos !
-                  </h5>
-                </div>
-              </body>`,
-          };
-
-          transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-              console.error("Error sending email: ", error);
-            } else {
-              console.log("Email sent: ", info.response);
-            }
-        })
       })
     }
   })

@@ -57,11 +57,6 @@ router.put('/data', (req, res) => {
         })
 })
 
-//mettre à jour l'id d'un statut_infos dans la collection research
-router.put('/dt', (req, res) => {
-
-})
-
 //mettre à jour statut_id dans la collection status_infos
 router.put('/status', (req, res) => {
     Status_infos.updateOne({ _id: req.body._id }, { status_id: req.body.status_id })

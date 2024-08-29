@@ -1,6 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/users');
+const URL_BACK = process.env.URL_BACK;
 
 
 //config passeport pour la strategie google
@@ -8,7 +9,7 @@ passport.use(new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
   //redirection apres auth reussi
-  callbackURL: 'http://localhost:3000/users/auth/google/callback'
+  callbackURL: `${URL_BACK}/users/auth/google/callback`
 }, (accessToken, refreshToken, profile, done) => {
   User.findOne({ email: profile.emails[0].value })
   .then(user => {
