@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+require('../models/connection');
 
 const Search = require('../models/searches')
 const Status_infos = require('../models/status_infos')

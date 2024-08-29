@@ -1,8 +1,10 @@
 var express = require('express');
 var router = express.Router();
+require('../models/connection');
 const User=require('../models/users')
 const Search = require('../models/searches')
 const Score = require('../models/scores')
+
 
 router.post('/registerSearch', async (req, res)=>{
     const {search, email} = req.body
@@ -27,7 +29,7 @@ router.post('/registerSearch', async (req, res)=>{
       status_general: search.status_general,
     })
 
-    console.log(newSearch, scoreSaved)
+    //console.log(newSearch, scoreSaved)
 
     const data = await newSearch.save()
 
