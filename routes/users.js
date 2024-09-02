@@ -19,7 +19,7 @@ const {JWT_SECRET} = process.env
 
 // ROUTE SIGNUP AVEC VERIFICATION MAIL
 router.post('/signup', (req, res) => {
-	if (!checkBody(req.body, ['email', 'password'])) {
+	if (!checkBody(req.body, ['email', 'password', 'firstname', 'name'])) {
     res.json({ result: false, error: 'Missing or empty fields' });
     return;
   }
