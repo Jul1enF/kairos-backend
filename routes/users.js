@@ -395,9 +395,9 @@ router.get('/new-email-confirmation/:token', (req, res) => {
   const userToken = user.userId
 
   //Modifier le champ verified du document User puis rediriger vers page confirmation
-  User.updateOne({ token: userToken }, { verified: true })
+  User.updateOne({ token: userToken }, { verified: true })     
   .then(data => {
-          if (data.modifiedCount === 0) {
+          if (data.modifiedCount === 0) {    
             User.findById(userId)
             .then(user => {
               user && res.json({result: false, error: 'Email already verified'})
