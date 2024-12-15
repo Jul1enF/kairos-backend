@@ -17,9 +17,16 @@ const urlBack = process.env.URL_BACK  //3000
 const emailSecret = process.env.EMAIL_SECRET
 const {JWT_SECRET} = process.env
 
+const mongoose = require('mongoose');
+
+const connectionString = process.env.CONNECTION_STRING;
+
 
 // ROUTE SIGNUP AVEC VERIFICATION MAIL
-router.post('/signup', (req, res) => {
+router.post('/signup', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
 	if (!checkBody(req.body, ['email', 'password', 'firstname', 'name'])) {
     res.json({ result: false, error: 'Missing or empty fields' });
     return;
@@ -116,8 +123,11 @@ router.post('/signup', (req, res) => {
 });
 
 //ROUTE CONFIRMATION EMAIL
-router.get('/confirmation/:token', (req, res) => {
+router.get('/confirmation/:token', async (req, res) => {
 
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   // Récupérer l'ID du User avec jwt
   const user = jwt.verify(req.params.token, emailSecret);
   const userId = user.userId;
@@ -153,7 +163,11 @@ router.get('/confirmation/:token', (req, res) => {
 })
 
 // ROUTE SIGNIN
-router.post('/signin', (req, res) => {
+router.post('/signin', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   if (!checkBody(req.body, ['email', 'password'])) {
     res.json({ result: false, error: 'Missing or empty fields' });
     return;
@@ -183,7 +197,11 @@ router.get('/auth/google',
 
 router.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => {
+    async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
       if (req.user) {
         const token = jwt.sign(
           { id: req.user._id, name: req.user.name, email: req.user.email },
@@ -200,7 +218,12 @@ router.get('/auth/google/callback',
     });
 
 // ROUTE POUR OBTENIR LES INFOS USER POUR GOOGLE
-router.get('/api/me', (req, res) => {
+router.get('/api/me', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
+
   const token = req.cookies.jwt;
   console.log('token:', token)
   console.log('req.headers:', req.headers)
@@ -223,7 +246,11 @@ router.get('/api/me', (req, res) => {
 });
 
 //ROUTE INFO USER
-router.post('/info-user', (req, res) => {
+router.post('/info-user', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   const { token, email } = req.body;
 
   if (token) {
@@ -251,7 +278,11 @@ router.post('/info-user', (req, res) => {
 
 
 // ROUTE DELETE USER ACCOUNT 
-router.delete('/', (req, res) => {
+router.delete('/', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   User.deleteOne({token: req.body.token})
   .then((data) => {
     if(data.deletedCount > 0) {
@@ -263,7 +294,11 @@ router.delete('/', (req, res) => {
 })
 
 // ROUTE UPDATE USER NAME/FIRSTNAME/PASSWORD => modif via token
-router.put('/update-user', (req, res) => {
+router.put('/update-user', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   User.findOne({token: req.body.token})
   .then(data => {
     if (data !== null) {
@@ -321,7 +356,11 @@ router.put('/update-user', (req, res) => {
 
 
 //ROUTE UPDATE EMAIL AVEC VERIFICATION MAIL => modif via token 
-router.put('/update-email', (req,res) => {
+router.put('/update-email',async (req,res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   User.findOne({email : req.body.email})
   .then(data => {
     if(data) 
@@ -389,7 +428,11 @@ router.put('/update-email', (req,res) => {
 })
 
 //ROUTE CONFIRMATION EMAIL POUR CHANGEMENT EMAIL
-router.get('/new-email-confirmation/:token', (req, res) => {
+router.get('/new-email-confirmation/:token', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
 
   // Récupérer le token du User avec jwt
   const user = jwt.verify(req.params.token, emailSecret);
@@ -409,7 +452,11 @@ router.get('/new-email-confirmation/:token', (req, res) => {
 })
 
 //route put pour updateOne user token google account
-router.put('/update', (req, res) => {
+router.put('/update', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+	
   User.updateOne({email: req.body.email}, {token: req.body.token})
   .then(data => {
     console.log(data)

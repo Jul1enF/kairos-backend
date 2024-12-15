@@ -2,9 +2,17 @@ var express = require('express');
 var router = express.Router();
 require('../models/connection');
 
+const mongoose = require('mongoose');
+
+const connectionString = process.env.CONNECTION_STRING;
+
 const User=require('../models/users')
 
 router.post('/getSearches', async(req, res)=>{
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+  
 const data = await User.findOne({email : req.body.email}).populate({path: 'searches', populate: {path: 'score'}});
 console.log(data)
 if (data){
@@ -14,7 +22,11 @@ else {res.json({result : false})}
 })
 
 //ROUTE UPDATE SCORE SKILL USER
-router.put('/save-scores', (req,res) => {
+router.put('/save-scores', async (req,res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+  
     User.findOne({ token : req.body.token})
         .then(user => {
             if (user === null) {

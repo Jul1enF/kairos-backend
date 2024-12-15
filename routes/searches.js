@@ -7,6 +7,10 @@ const Status_infos = require('../models/status_infos')
 const User=require('../models/users')
 const Score = require('../models/scores')
 
+const mongoose = require('mongoose');
+
+const connectionString = process.env.CONNECTION_STRING;
+
 const lbElementsList = require('../datas/lbElementsList')
 const nbEntreprisesApe = require('../datas/nbEntreprisesCodeApe')
 
@@ -19,6 +23,8 @@ const apiKey = process.env.SIRENE_API_KEY
 
 
 router.put('/newSearch', async (req, res) => {
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
 
   const { city, nafCode, token, email, postcode } = req.body
 

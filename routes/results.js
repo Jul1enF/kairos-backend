@@ -5,8 +5,16 @@ const User=require('../models/users')
 const Search = require('../models/searches')
 const Score = require('../models/scores')
 
+const mongoose = require('mongoose');
+
+const connectionString = process.env.CONNECTION_STRING;
+
 
 router.post('/registerSearch', async (req, res)=>{
+
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+  
     const {search, email} = req.body
 
     // Enregistrement de la recherche
