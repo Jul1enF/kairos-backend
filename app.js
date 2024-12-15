@@ -25,8 +25,16 @@ app.use(cors({
     credentials: true // Permet d'inclure les cookies dans les requêtes
   }));
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Credentials', true);   
-  res.setHeader('Access-Control-Allow-Origin', process.env.URL_FRONT); // your_frontend_domain, it's an example
+  res.setHeader('Access-Control-Allow-Credentials', true); 
+  
+  const allowedOrigins = [process.env.URL_FRONT, "https://play.google.com", "https://www.googleapis.com"];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+       res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  // res.setHeader('Access-Control-Allow-Origin', process.env.URL_FRONT); 
+  // your_frontend_domain, it's an example
     next()
  });
 app.use(cookieParser());
