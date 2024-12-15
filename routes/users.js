@@ -17,6 +17,7 @@ const urlBack = process.env.URL_BACK  //3000
 const emailSecret = process.env.EMAIL_SECRET
 const {JWT_SECRET} = process.env
 
+
 // ROUTE SIGNUP AVEC VERIFICATION MAIL
 router.post('/signup', (req, res) => {
 	if (!checkBody(req.body, ['email', 'password', 'firstname', 'name'])) {

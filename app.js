@@ -19,14 +19,14 @@ var app = express();
 
 const cors = require('cors');
 app.use(cors({
-    origin:  'https://kairos-frontend-six.vercel.app',
+    origin:  process.env.URL_FRONT,
     methods: 'GET,POST,PUT,DELETE', // méthodes HTTP autorisées
     allowedHeaders: 'Content-Type,Authorization, ', // headers autorisés
     credentials: true // Permet d'inclure les cookies dans les requêtes
   }));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', true);   
-  res.setHeader('Access-Control-Allow-Origin', 'https://kairos-frontend-six.vercel.app'); // your_frontend_domain, it's an example
+  res.setHeader('Access-Control-Allow-Origin', process.env.URL_FRONT); // your_frontend_domain, it's an example
     next()
  });
 app.use(cookieParser());
