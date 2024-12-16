@@ -6,6 +6,8 @@ const passport = require('../config/auth');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 
+const { OAuth2Client } = require('google-auth-library')
+
 require('../models/connection');
 const User = require('../models/users');
 const { checkBody } = require('../modules/checkBody');
@@ -190,6 +192,152 @@ router.post('/signin', async (req, res) => {
   });
 
 });
+
+
+
+
+
+
+
+
+// NOUVELLE ROUTE CONNEXION GOOGLE
+
+// 1ère route pour avoir une url de connexion google
+
+const googleId = process.env.CLIENT_ID
+const googleSecret = process.env.CLIENT_SECRET
+
+router.post('/google', async (req, res) => {
+  try {
+      res.header('Access-Control-Allow-Origin', `${urlFront}`)
+
+      // Pour autoriser l'utilisation de http ou lieu de https
+      res.header('Referrer-Policy', 'no-referrer-when-downgrade')
+
+      const redirectUrl = `${urlBack}/users/google/auth`
+
+      const oAuth2Client = new OAuth2Client(
+          googleId,
+          googleSecret,
+          redirectUrl,
+      )
+
+      const authorizeUrl = oAuth2Client.generateAuthUrl({
+
+          // Pour avoir un nouveau token à chaque fois
+          access_type: 'offline',
+          // Scope des infos que l'on veut récupérer
+          scope: 'https://www.googleapis.com/auth/userinfo.profile openid email',
+          // Pour redemander quelle session google l'utilisateur veut utiliser à chacune de ses connexions
+          prompt: 'consent',
+      })
+
+      res.json({ url: authorizeUrl })
+  } catch (err) { res.json({ err }) }
+})
+
+
+
+// redirectUrl : Route pour obtenir de Google les infos du user
+
+router.get('/google/auth', async (req, res) => {
+  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+
+  //Récupération du code fourni par google
+  const { code } = req.query
+
+  try {
+      const redirectUrl = `${urlBack}/users/google/auth`
+      const oAuth2Client = new OAuth2Client(
+          googleId,
+          googleSecret,
+          redirectUrl,
+      )
+
+      //Échange du code contre un token d'utilisation
+      const answer = await oAuth2Client.getToken(code)
+      await oAuth2Client.setCredentials(answer.tokens)
+
+      //Récupération des infos/credentials/tokens du user
+      const user = oAuth2Client.credentials
+
+      //Récupération des infos du user grâce à son access_token
+      const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`,
+          {
+              headers: {
+                  Authorization: `Bearer ${user.access_token}`
+              }
+          }
+      )
+      const data = await response.json()
+
+      let name
+      if (data.family_name) { name = data.family_name }
+
+      const { email } = data
+      const firstname = data.given_name
+      const token = uid2(32)
+
+      const result = await User.findOne({ email })
+
+      // Si l'utilisateur se connecte
+      if (result) {
+          result.last_connection = new Date(),
+          await result.save()
+
+          const userInfos = {
+            firstname : result.firstname,
+            name : result.name,
+            email : result.email,
+            token : result.token,
+            skills : result.skills,
+          }
+
+          const jwtToken = jwt.sign(userInfos, process.env.JWT_SECRET2);
+
+          res.redirect(`${urlFront}/google/${jwtToken}`)
+
+      }
+      // Si l'utilisateur s'inscrit
+      else {
+          const newUser = new User({
+              firstname,
+              name,
+              email,
+              skills: [],
+              token,
+              last_connection: new Date(),
+              searches: [],
+              verified: true,
+          })
+
+          await newUser.save()
+
+          const userInfos = {
+            firstname,
+            name,
+            email,
+            token,
+            skills : [],
+          }
+
+          const jwtToken = jwt.sign(userInfos, process.env.JWT_SECRET2);
+
+          res.redirect(`${urlFront}/google/${jwtToken}`)
+      }
+
+
+  } catch (err) { console.log(err) }
+})
+
+
+
+
+
+
+
+
+
 
 // ROUTE CONNEXION GOOGLE
 router.get('/auth/google',
