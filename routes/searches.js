@@ -21,7 +21,7 @@ const apiKey = process.env.SIRENE_API_KEY
 
 
 
-router.put('/newSearch', async (req, res) => {
+router.post('/newSearch', async (req, res) => {
   console.log("HELLLLLOOOO")
   if (mongoose.connection.readyState !== 1) {
     console.log("NO DB CONNEXION")
