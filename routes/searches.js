@@ -4,7 +4,7 @@ require('../models/connection');
 
 const Search = require('../models/searches')
 const Status_infos = require('../models/status_infos')
-const User=require('../models/users')
+const User = require('../models/users')
 const Score = require('../models/scores')
 
 const mongoose = require('mongoose');
@@ -23,8 +23,11 @@ const apiKey = process.env.SIRENE_API_KEY
 
 
 router.put('/newSearch', async (req, res) => {
-console.log("HELLLLLOOOO")
-  await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
+  console.log("HELLLLLOOOO")
+  if (mongoose.connection.readyState !== 1) {
+    console.log("NO DB CONNEXION")
+    await mongoose.connect(connectionString, { connectTimeoutMS: 6000 })
+  }
 
   const { city, nafCode, token, email, postcode } = req.body
 
@@ -46,14 +49,14 @@ console.log("HELLLLLOOOO")
   //   },
   // })
 
-      const response = await fetch(`https://api.insee.fr/api-sirene/3.11/siren/309634954`, {
+  const response = await fetch(`https://api.insee.fr/api-sirene/3.11/siren/309634954`, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
       'Authorization': "X-INSEE-Api-Key-Integration: 61662980-6524-4f10-a629-8065241f108d",
     },
-  }) 
-console.log("RESPONSE", response) 
+  })
+  console.log("RESPONSE", response)
   // ou   headers: `X-INSEE-Api-Key-Integration: ${apiKey}`
   //  'Authorization':`X-INSEE-Api-Key-Integration: ${apiKey}`
 
@@ -72,15 +75,15 @@ console.log("RESPONSE", response)
 
   const cityWithSpaces = city.replace(/-/g, ' ').toUpperCase()
   const cityInUpperCase = city.toUpperCase()
-  
-  let companiesInTheRigthCity = data.etablissements.filter(e=> e.adresseEtablissement.libelleCommuneEtablissement === cityInUpperCase || cityWithSpaces)
+
+  let companiesInTheRigthCity = data.etablissements.filter(e => e.adresseEtablissement.libelleCommuneEtablissement === cityInUpperCase || cityWithSpaces)
 
 
   // Si la ville est Paris, Marseille ou Lyon avec code postal d'arrondissement, tri pour ne garder que les établissements dans cet arrondissement.
 
-  if (postcode){
-    if (city== "Marseille" || city=="Paris" || city=="Lyon"){
-      companiesInTheRigthCity = companiesInTheRigthCity.filter(e=>e.adresseEtablissement.codePostalEtablissement==postcode)
+  if (postcode) {
+    if (city == "Marseille" || city == "Paris" || city == "Lyon") {
+      companiesInTheRigthCity = companiesInTheRigthCity.filter(e => e.adresseEtablissement.codePostalEtablissement == postcode)
     }
   }
 
@@ -95,10 +98,10 @@ console.log("RESPONSE", response)
     return
   }
 
-    // Création de la date de la recherche et mise en forme pour recherches
+  // Création de la date de la recherche et mise en forme pour recherches
 
-    const date = new Date()
-    const yearForSearches = moment(date).format("YYYY")
+  const date = new Date()
+  const yearForSearches = moment(date).format("YYYY")
 
   // Création du sous document current_companies
 
@@ -138,14 +141,18 @@ console.log("RESPONSE", response)
     let ca2 = Math.round((Math.random() * 99 + 1) * 100) / 100;
     let ca3 = Math.round((Math.random() * 99 + 1) * 100) / 100;
 
-    const ca_per_year =[
-      {actual_year : yearForSearches,
-      ca,},
-      {year_n_minus_1: convertInPreviousYear(yearForSearches, 1),
-        ca : ca2,
+    const ca_per_year = [
+      {
+        actual_year: yearForSearches,
+        ca,
       },
-      {year_n_minus_2: convertInPreviousYear(yearForSearches, 2),
-        ca : ca3,
+      {
+        year_n_minus_1: convertInPreviousYear(yearForSearches, 1),
+        ca: ca2,
+      },
+      {
+        year_n_minus_2: convertInPreviousYear(yearForSearches, 2),
+        ca: ca3,
       }
     ]
 
@@ -160,8 +167,8 @@ console.log("RESPONSE", response)
     return e
   })
   // Sous document current_companies créé. Limitation de son nombre :
-  if (current_companies.length>250){
-    current_companies=current_companies.slice(0,250)
+  if (current_companies.length > 250) {
+    current_companies = current_companies.slice(0, 250)
   }
 
 
@@ -322,103 +329,105 @@ console.log("RESPONSE", response)
 
   for (let e of codes) {
     const data = await Status_infos.findOne({ status_code: e })
-    if(data) {status_general.push(data._id)
-  }}
-
-// CALCUL SCORE
-
-// évolution CA : average_ca
-let startCA = 0;
-let endCA = 0;
-
-for (let company of current_companies) {
-  startCA = startCA + company.ca_per_year[2].ca;
-  endCA += company.ca_per_year[0].ca;
-};
-
-const startCaAverage = startCA / current_companies.length;
-const endCaAverage = endCA / current_companies.length;
-
-const ca_evolution = Math.round(((endCaAverage - startCaAverage) / startCaAverage * 100) * 100) / 100;
-
-let average_ca = Math.floor(((ca_evolution/10)+10) * 2);
-if (average_ca < 0) {
-  average_ca = 0;
-} else if (average_ca > 40) {
-  average_ca = 40
-}
-
-// durée de vie moyenne d'une entreprise : average_lifetime
-let averageLifetimeCalc;
-let totalLifetime = 0;
-
-
-for (let company of companiesInTheRigthCity) {
-  let endingYear;
-  const startYear = Number(company.dateCreationEtablissement.slice(0, 4));
-  if (company.uniteLegale.etatAdministratifUniteLegale === 'A') {
-    endingYear = Number(yearForSearches)
+    if (data) {
+      status_general.push(data._id)
+    }
   }
-  else (
-    endingYear = Number(company.periodesEtablissement[0].dateDebut.slice(0, 4))
-  );
 
-  totalLifetime = totalLifetime + (endingYear - startYear)
-}
+  // CALCUL SCORE
 
-averageLifetimeCalc = totalLifetime / companiesInTheRigthCity.length;
-let average_lifetime = Math.floor(averageLifetimeCalc * 2);
-if (average_lifetime > 20) {
-  average_lifetime = 20;
-}
+  // évolution CA : average_ca
+  let startCA = 0;
+  let endCA = 0;
 
-// densité d'entreprises pour une ville : density_of_companies
+  for (let company of current_companies) {
+    startCA = startCA + company.ca_per_year[2].ca;
+    endCA += company.ca_per_year[0].ca;
+  };
 
-const resp = await fetch(`https://geo.api.gouv.fr/communes?nom=${city}&fields=code,nom,population&boost=population`);
-const answ = await resp.json();
+  const startCaAverage = startCA / current_companies.length;
+  const endCaAverage = endCA / current_companies.length;
 
-const population = answ[0].population;
-const density = population / current_companies.length;
+  const ca_evolution = Math.round(((endCaAverage - startCaAverage) / startCaAverage * 100) * 100) / 100;
 
-const allApeInfos = nbEntreprisesApe.results;
+  let average_ca = Math.floor(((ca_evolution / 10) + 10) * 2);
+  if (average_ca < 0) {
+    average_ca = 0;
+  } else if (average_ca > 40) {
+    average_ca = 40
+  }
 
-const apeInfo = allApeInfos.find(e => e.code_ape.slice(0, 2) == nafCode.slice(0, 2) && e.code_ape.slice(2) === nafCode.slice(3) )
+  // durée de vie moyenne d'une entreprise : average_lifetime
+  let averageLifetimeCalc;
+  let totalLifetime = 0;
 
-let nbCompanies2023;
 
-if (apeInfo === undefined || apeInfo.nombre_d_etablissements_2023 === 0) {
-  nbCompanies2023 = 1;
-}
-else {
-  nbCompanies2023 = apeInfo.nombre_d_etablissements_2023;
-}
+  for (let company of companiesInTheRigthCity) {
+    let endingYear;
+    const startYear = Number(company.dateCreationEtablissement.slice(0, 4));
+    if (company.uniteLegale.etatAdministratifUniteLegale === 'A') {
+      endingYear = Number(yearForSearches)
+    }
+    else (
+      endingYear = Number(company.periodesEtablissement[0].dateDebut.slice(0, 4))
+    );
 
-const index = 68000000 / nbCompanies2023;
+    totalLifetime = totalLifetime + (endingYear - startYear)
+  }
 
-let density_of_companies = Math.floor((density * 10) / index);
-if (density_of_companies > 20) {
-  density_of_companies = 20
-};
+  averageLifetimeCalc = totalLifetime / companiesInTheRigthCity.length;
+  let average_lifetime = Math.floor(averageLifetimeCalc * 2);
+  if (average_lifetime > 20) {
+    average_lifetime = 20;
+  }
 
-// ratio ouvertures/fermetures sur 3 ans : turnover
+  // densité d'entreprises pour une ville : density_of_companies
 
-const openedCompanies = companiesInTheRigthCity.filter(e => Number(e.dateCreationEtablissement.slice(0, 4)) >= Number(yearForSearches) );
+  const resp = await fetch(`https://geo.api.gouv.fr/communes?nom=${city}&fields=code,nom,population&boost=population`);
+  const answ = await resp.json();
 
-const closedCompanies = companiesInTheRigthCity.filter(e => e.uniteLegale.etatAdministratifUniteLegale === 'C' && Number(e.periodesEtablissement[0].dateDebut.slice(0, 4)) >= Number(yearForSearches));
+  const population = answ[0].population;
+  const density = population / current_companies.length;
 
-const ratio = Math.floor((openedCompanies.length - closedCompanies.length) *100 / current_companies.length);
+  const allApeInfos = nbEntreprisesApe.results;
 
-let turnover;
-if (ratio <= -20 || ratio >= 20) {
-  turnover = 0
-}
-else if (ratio === 0) {
-  turnover = 20
-}
+  const apeInfo = allApeInfos.find(e => e.code_ape.slice(0, 2) == nafCode.slice(0, 2) && e.code_ape.slice(2) === nafCode.slice(3))
 
-else (ratio < 0 ? turnover = 20 + ratio : turnover = 20 - ratio)
+  let nbCompanies2023;
 
-const currentScore = {average_ca, average_lifetime, density_of_companies, turnover}
+  if (apeInfo === undefined || apeInfo.nombre_d_etablissements_2023 === 0) {
+    nbCompanies2023 = 1;
+  }
+  else {
+    nbCompanies2023 = apeInfo.nombre_d_etablissements_2023;
+  }
+
+  const index = 68000000 / nbCompanies2023;
+
+  let density_of_companies = Math.floor((density * 10) / index);
+  if (density_of_companies > 20) {
+    density_of_companies = 20
+  };
+
+  // ratio ouvertures/fermetures sur 3 ans : turnover
+
+  const openedCompanies = companiesInTheRigthCity.filter(e => Number(e.dateCreationEtablissement.slice(0, 4)) >= Number(yearForSearches));
+
+  const closedCompanies = companiesInTheRigthCity.filter(e => e.uniteLegale.etatAdministratifUniteLegale === 'C' && Number(e.periodesEtablissement[0].dateDebut.slice(0, 4)) >= Number(yearForSearches));
+
+  const ratio = Math.floor((openedCompanies.length - closedCompanies.length) * 100 / current_companies.length);
+
+  let turnover;
+  if (ratio <= -20 || ratio >= 20) {
+    turnover = 0
+  }
+  else if (ratio === 0) {
+    turnover = 20
+  }
+
+  else (ratio < 0 ? turnover = 20 + ratio : turnover = 20 - ratio)
+
+  const currentScore = { average_ca, average_lifetime, density_of_companies, turnover }
 
   // Enregistrement d'une nouvelle recherche en bdd
 
@@ -437,7 +446,7 @@ const currentScore = {average_ca, average_lifetime, density_of_companies, turnov
   }
 
   else {
-    const newScore = new Score (currentScore);
+    const newScore = new Score(currentScore);
     const savedScore = await newScore.save()
 
     const newSearch = new Search({
@@ -452,16 +461,16 @@ const currentScore = {average_ca, average_lifetime, density_of_companies, turnov
 
 
     // Inscription de l'id de cette recherche dans le document user correspondant 
-    
+
     const datas = await newSearch.save()
 
-    const returnedData = await Search.findOne({_id: datas._id}).populate('score');
+    const returnedData = await Search.findOne({ _id: datas._id }).populate('score');
 
-    const searchKey = await User.updateOne({email}, {$push:{searches : datas._id}})
+    const searchKey = await User.updateOne({ email }, { $push: { searches: datas._id } })
 
-  
 
-    res.json({ result: returnedData, searchForeignKey : datas._id })
+
+    res.json({ result: returnedData, searchForeignKey: datas._id })
 
   }
 })
