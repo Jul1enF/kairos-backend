@@ -28,13 +28,38 @@ router.put('/newSearch', async (req, res) => {
 
   const { city, nafCode, token, email, postcode } = req.body
 
-  const response = await fetch(`https://api.insee.fr/entreprises/sirene/V3.11/siret?q=activitePrincipaleUniteLegale:${nafCode} AND libelleCommuneEtablissement:${city}&nombre=1000`, {
+  // https://api.insee.fr/api-sirene/3.11 Nouvelle adresse de départ
+
+  // Ancien fetch ancienne adresse Sirene
+
+  // const response = await fetch(`https://api.insee.fr/entreprises/sirene/V3.11/siret?q=activitePrincipaleUniteLegale:${nafCode} AND libelleCommuneEtablissement:${city}&nombre=1000`, {
+  //   method: 'GET',
+  //   headers: {
+  //     'Authorization': `Bearer ${apiKey}`,
+  //   },
+  // })
+
+  //   const response = await fetch(`https://api.insee.fr/entreprises/sirene/V3.11/siret?q=activitePrincipaleUniteLegale:${nafCode} AND libelleCommuneEtablissement:${city}&nombre=1000`, {
+  //   method: 'GET',
+  //   headers: {
+  //     'X-INSEE-Api-Key-Integration': `${apiKey}`,
+  //   },
+  // })
+
+      const response = await fetch(`https://api.insee.fr/api-sirene/3.11/siren/309634954`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Accept': 'application/json',
+      'Authorization': "X-INSEE-Api-Key-Integration: 61662980-6524-4f10-a629-8065241f108d",
     },
-  })
+  }) 
+console.log("RESPONSE", response) 
+  // ou   headers: `X-INSEE-Api-Key-Integration: ${apiKey}`
+  //  'Authorization':`X-INSEE-Api-Key-Integration: ${apiKey}`
+
   const data = await response.json()
+
+  console.log("DATA", data)
 
   // Réponse si aucune entreprise trouvée
 
