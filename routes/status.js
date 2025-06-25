@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 const connectionString = process.env.CONNECTION_STRING;
 
 //import des models de Schéma
-require('../models/connection');
 const Status_infos = require('../models/status_infos');
 const Status = require('../models/status')
 

@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 
 const { OAuth2Client } = require('google-auth-library')
 
-require('../models/connection');
 const User = require('../models/users');
 const { checkBody } = require('../modules/checkBody');
 
