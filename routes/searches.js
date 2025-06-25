@@ -23,7 +23,7 @@ const apiKey = process.env.SIRENE_API_KEY
 
 
 router.post('/newSearch', async (req, res) => {
-  
+
   if (mongoose.connection.readyState !== 1) {
     console.log("NO DB CONNEXION")
     await mongoose.connect(connectionString, { connectTimeoutMS: 6000 })
@@ -43,7 +43,7 @@ router.post('/newSearch', async (req, res) => {
   const response = await fetch(`https://api.insee.fr/api-sirene/3.11/siret?q=activitePrincipaleUniteLegale:${nafCode} AND libelleCommuneEtablissement:${city}&nombre=1000`, {
     method: 'GET',
     headers: {
-      'X-INSEE-Api-Key-Integration': '61662980-6524-4f10-a629-8065241f108d'
+      'X-INSEE-Api-Key-Integration': apiKey
     },
   })
 
