@@ -23,7 +23,7 @@ const apiKey = process.env.SIRENE_API_KEY
 
 
 router.put('/newSearch', async (req, res) => {
-
+console.log("HELLLLLOOOO")
   await mongoose.connect(connectionString, { connectTimeoutMS: 2000 })
 
   const { city, nafCode, token, email, postcode } = req.body
