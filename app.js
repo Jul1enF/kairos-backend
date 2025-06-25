@@ -19,7 +19,8 @@ var app = express();
 
 const cors = require('cors');
 app.use(cors({
-    origin:  process.env.URL_FRONT,
+    // origin:  process.env.URL_FRONT,
+        origin:  "http://localhost:3001",
     methods: 'GET,POST,PUT,DELETE', // méthodes HTTP autorisées
     allowedHeaders: 'Content-Type,Authorization, ', // headers autorisés
     credentials: true // Permet d'inclure les cookies dans les requêtes
@@ -27,7 +28,7 @@ app.use(cors({
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', true); 
   
-  const allowedOrigins = [process.env.URL_FRONT, "https://play.google.com", "https://www.googleapis.com"];
+  const allowedOrigins = [process.env.URL_FRONT, "https://play.google.com", "https://www.googleapis.com", "http://localhost:3001"];
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
        res.setHeader('Access-Control-Allow-Origin', origin);
