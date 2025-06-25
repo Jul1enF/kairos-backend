@@ -52,7 +52,7 @@ router.post('/newSearch', async (req, res) => {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
-      'Authorization': "61662980-6524-4f10-a629-8065241f108d",
+      'Authorization': "Bearer 61662980-6524-4f10-a629-8065241f108d",
     },
   })
   console.log("RESPONSE", response)
